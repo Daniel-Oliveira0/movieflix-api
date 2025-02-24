@@ -99,6 +99,8 @@ app.delete("/movies/:id", async (req, res) => {
     }
     res.status(200).send()
 })
+
+
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
 });
