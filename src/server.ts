@@ -24,7 +24,9 @@ app.get("/movies", async (_, res) => {
 });
 
 app.post("/movies", async (req, res) => {
-    const { title, genre_id, language_id, oscar_count, release_date } = req.body;
+    let { title, genre_id, language_id, oscar_count, release_date } = req.body;
+
+    title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
 
     const movieWithSameTitle = await prisma.movie.findFirst({
         where: { title: { equals: title, mode: "insensitive" } }
@@ -86,11 +88,13 @@ app.put("/movies/:id", async (req, res) => {
 
 app.put("/genres/:id", async (req, res) => {
     const { id } = req.params;
-    const { name } = req.body;
+    let { name } = req.body;
 
     if(!name){
         return res.status(400).send({ message: "O nome do gênero é obrigatório." });
     }
+
+    name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 
     try {
         const genre = await prisma.genre.findUnique({
