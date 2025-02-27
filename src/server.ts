@@ -2,6 +2,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
+import { equal } from "assert";
 
 const port = 3000;
 const app = express();
@@ -36,9 +37,6 @@ app.post("/movies", async (req, res) => {
     }
 
     try {
-
-
-
         await prisma.movie.create({
             data: {
                 title,
@@ -87,31 +85,46 @@ app.put("/movies/:id", async (req, res) => {
 });
 
 app.put("/genres/:id", async (req, res) => {
-    const id = Number(req.params.id);
-    try{
-    const genre = await prisma.genre.findUnique({
-        where:{
-            id
-        }
-    });
-    
-    if (!genre) {
-        return res.status(404).send({ message: "Gênero não encontrado" });
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if(!name){
+        return res.status(400).send({ message: "O nome do gênero é obrigatório." });
     }
 
-    const data = { ...req.body };
-    await prisma.genre.update({
-        where: {
-            id
-        },
-        data: data
-    });
-    
-    res.status(200).send({ message: "Gênero atualizado com sucesso" });
+    try {
+        const genre = await prisma.genre.findUnique({
+            where: { id: Number(id) }
+        });
 
-}catch(error){
-    res.status(500).send({ message: "Falha ao atualizar o gênero" })
-}
+        if (!genre) {
+            return res.status(404).send({ message: "Gênero não encontrado" });
+        }
+
+        const existingGenre = await prisma.genre.findFirst({
+            where:{
+                name:{ equals: name, mode:"insensitive"},
+                id: { not: Number(id) }
+            }
+        });
+
+        if(existingGenre){
+            return res.status(409).send({ message: "Este nome de Gênero já existe" })
+        }
+
+        const updateGenre = await prisma.genre.update({
+            where: {
+                id: Number(id)
+            },
+            data: { name }
+        });
+
+        res.status(200).send(updateGenre);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Falha ao atualizar o gênero" })
+    }
 
 });
 
