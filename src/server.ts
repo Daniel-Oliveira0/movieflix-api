@@ -56,6 +56,31 @@ app.post("/movies", async (req, res) => {
     res.status(201).send();
 });
 
+app.post("/genres", async (req, res) => {
+    let { name } = req.body;
+
+    if(!name){
+        return res.status(400).send({ message: "O nome é obrigatório." })
+    }
+    const genreWithName = await prisma.genre.findFirst({
+        where: { name: { equals: name, mode: "insensitive" } }
+    })
+
+    if (genreWithName) {
+        return res.status(409).send({ message: "Esse gênero já existe." })
+    }
+    try {
+        await prisma.genre.create({
+            data: { name }
+        });
+
+        res.status(201).send({ message: "Gênero cadastrado com sucesso." });
+
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao adicionar gênero." })
+    }
+
+})
 
 app.put("/movies/:id", async (req, res) => {
 
@@ -90,7 +115,7 @@ app.put("/genres/:id", async (req, res) => {
     const { id } = req.params;
     let { name } = req.body;
 
-    if(!name){
+    if (!name) {
         return res.status(400).send({ message: "O nome do gênero é obrigatório." });
     }
 
@@ -106,13 +131,13 @@ app.put("/genres/:id", async (req, res) => {
         }
 
         const existingGenre = await prisma.genre.findFirst({
-            where:{
-                name:{ equals: name, mode:"insensitive"},
+            where: {
+                name: { equals: name, mode: "insensitive" },
                 id: { not: Number(id) }
             }
         });
 
-        if(existingGenre){
+        if (existingGenre) {
             return res.status(409).send({ message: "Este nome de Gênero já existe" })
         }
 
