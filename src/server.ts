@@ -124,14 +124,20 @@ app.get("/movies/:genreName", async (req, res) => {
 });
 
 app.get("/genres", async (req, res) => {
-    const genreFilter = await prisma.genre.findMany({
-        orderBy: {
-            name:"asc"
-        }
-    })
-    const genreNames = genreFilter.map(genre => genre.name);
-
-    res.status(200).json({ genres: genreNames });
+    
+    try {
+        const genreFilter = await prisma.genre.findMany({
+            orderBy: {
+                name: "asc"
+            }
+        })
+        const genreNames = genreFilter.map(genre => genre.name);
+        
+        res.status(200).json({ genres: genreNames });
+        
+    } catch (error) {
+        res.status(500).send({ message: "Houve um problema ao buscar os gêneros" })
+    }
 })
 
 app.post("/genres", async (req, res) => {
