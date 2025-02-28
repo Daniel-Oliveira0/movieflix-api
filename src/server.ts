@@ -214,16 +214,29 @@ app.put("/genres/:id", async (req, res) => {
 });
 
 app.delete("/genres/:id", async (req, res) => {
-    const id = Number(req.params.id);
-    
-    await prisma.genre.delete({
-        where: {
-            id
-        }
-    })
-    res.status(200).send({ message: "Gênero excluido com sucesso" })
+    const { id } = req.params;
+    const genreId = Number(id);  
 
-})
+    try {
+        const genres = await prisma.genre.findMany();
+
+        const genre = await prisma.genre.findUnique({
+            where: { id: genreId },
+        });
+
+        if (!genre) {
+            return res.status(404).send({ message: "Gênero não encontrado." });
+        }
+
+        await prisma.genre.delete({
+            where: { id: genreId },
+        });
+
+        res.status(200).send({ message: "Gênero removido com sucesso." });
+    } catch (error) {
+        res.status(500).send({ message: "Houve um problema ao remover o gênero." });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
