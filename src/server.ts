@@ -20,6 +20,7 @@ app.get("/movies", async (_, res) => {
             languages: true
         }
     });
+
     res.json(movies);
 });
 
