@@ -13,17 +13,32 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 app.get("/movies", async (_, res) => {
-    const movies = await prisma.movie.findMany({
-        orderBy: { title: "asc" },
-        include: {
-            genres: true,
-            languages: true
+    try {        
+        const movies = await prisma.movie.findMany({
+            orderBy: { title: "asc" },
+            include: {
+                genres: true,
+                languages: true
+            }
+        });
+    
+        const totalMovies = movies.length;
+    
+        let totalDuration = 0;
+        for (let movie of movies) {
+            totalDuration += movie.duration ?? 0; // Usando coalescência nula
         }
-    });
-
-    res.json(movies);
+        const averageDuration = totalMovies > 0 ? totalDuration / totalMovies : 0;
+    
+        res.json({
+            totalMovies,
+            averageDuration,
+            movies
+        });
+    } catch (error) {
+        res.status(500).send({ message: "Houve um problema ao buscar os filmes" });
+    }
 });
-
 app.post("/movies", async (req, res) => {
     let { title, genre_id, language_id, oscar_count, release_date } = req.body;
 
@@ -216,7 +231,7 @@ app.put("/genres/:id", async (req, res) => {
 
 app.delete("/genres/:id", async (req, res) => {
     const { id } = req.params;
-    const genreId = Number(id);  
+    const genreId = Number(id);
 
     try {
         const genres = await prisma.genre.findMany();
