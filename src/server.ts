@@ -45,8 +45,13 @@ app.get("/movies/sort", async (req, res) => {
 app.get("/movies/language", async (req, res) => {
     const { language } = req.query;
     const languageName = language as string;
+    
     let where = {};
-    if (languageName) {
+
+    if (!languageName) {
+        return res.status(400).send({ message: "O idioma é obrigatório." });
+    } else {
+
         where = {
             languages: {
                 name: {
@@ -57,7 +62,7 @@ app.get("/movies/language", async (req, res) => {
         };
     }
 
-    
+    try {
         const movies = await prisma.movie.findMany({
             where: where,
             include: {
@@ -67,6 +72,10 @@ app.get("/movies/language", async (req, res) => {
         });
 
         res.json(movies);
+
+    } catch (error) {
+        res.status(500).send({ message: "Houve um problema na busca." });
+    }
 
 })
 
