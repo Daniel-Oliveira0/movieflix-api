@@ -41,6 +41,35 @@ app.get("/movies/sort", async (req, res) => {
         res.status(500).send({ message: "Houve um problema ao buscar os filmes." });
     }
 });
+
+app.get("/movies/language", async (req, res) => {
+    const { language } = req.query;
+    const languageName = language as string;
+    let where = {};
+    if (languageName) {
+        where = {
+            languages: {
+                name: {
+                    equals: languageName,
+                    mode: "insensitive",
+                },
+            },
+        };
+    }
+
+    
+        const movies = await prisma.movie.findMany({
+            where: where,
+            include: {
+                genres: true,
+                languages: true,
+            },
+        });
+
+        res.json(movies);
+
+})
+
 app.post("/movies", async (req, res) => {
     let { title, genre_id, language_id, oscar_count, release_date } = req.body;
 
