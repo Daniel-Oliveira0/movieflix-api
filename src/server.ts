@@ -3,6 +3,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
 import { equal } from "assert";
+import { emit } from "process";
 
 const port = 3000;
 const app = express();
@@ -45,30 +46,33 @@ app.get("/movies/sort", async (req, res) => {
 app.get("/movies/language", async (req, res) => {
     const { language } = req.query;
     const languageName = language as string;
-    
-    let where = {};
 
     if (!languageName) {
         return res.status(400).send({ message: "O idioma é obrigatório." });
-    } else {
-
-        where = {
-            languages: {
-                name: {
-                    equals: languageName,
-                    mode: "insensitive",
-                },
-            },
-        };
     }
 
     try {
+        const existingLanguage = await prisma.language.findFirst({
+            where: { name: languageName }
+        });
+
+        if (!existingLanguage) {
+            return res.status(404).send({ message: "Idioma não foi encontrado" });
+        }
+
         const movies = await prisma.movie.findMany({
-            where: where,
+            where: {
+                languages: {
+                    name: {
+                        equals: languageName,
+                        mode: "insensitive",
+                    },
+                },
+            },
             include: {
                 genres: true,
                 languages: true,
-            },
+            }
         });
 
         res.json(movies);
