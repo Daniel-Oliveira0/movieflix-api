@@ -2,8 +2,6 @@ import express from "express";
 import { PrismaClient, Prisma } from "@prisma/client";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
-import { equal } from "assert";
-import { emit } from "process";
 
 const port = 3000;
 const app = express();
@@ -12,24 +10,38 @@ const prisma = new PrismaClient()
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+app.get("/movies/filter", async (req, res) => {
+    const { language, sort } = req.query;
+    const languageName = language as string;
+    const sortName = sort as string;
 
-app.get("/movies/sort", async (req, res) => {
+    let orderBy = {};
+    if (sortName === "title") {
+        orderBy = {
+            title: "asc",
+        };
+    } else if (sortName === "release_date") {
+        orderBy = {
+            release_date: "asc",
+        };
+    }
+
+    let where = {};
+    if (languageName) {
+        where = {
+            languages: {
+                name: {
+                    equals: languageName,
+                    mode: "insensitive",
+                },
+            },
+        };
+    }
 
     try {
-        const { sort } = req.query;
-        let orderBy: Prisma.MovieOrderByWithRelationInput | Prisma.MovieOrderByWithRelationInput[] | undefined;
-        if (sort === "title") {
-            orderBy = {
-                title: "asc",
-            };
-        } else if (sort === "release_date") {
-            orderBy = {
-                release_date: "asc",
-            };
-        }
-
         const movies = await prisma.movie.findMany({
             orderBy,
+            where: where,
             include: {
                 genres: true,
                 languages: true,
@@ -42,47 +54,6 @@ app.get("/movies/sort", async (req, res) => {
         res.status(500).send({ message: "Houve um problema ao buscar os filmes." });
     }
 });
-
-app.get("/movies/language", async (req, res) => {
-    const { language } = req.query;
-    const languageName = language as string;
-
-    if (!languageName) {
-        return res.status(400).send({ message: "O idioma é obrigatório." });
-    }
-
-    try {
-        const existingLanguage = await prisma.language.findFirst({
-            where: { name: languageName }
-        });
-
-        if (!existingLanguage) {
-            return res.status(404).send({ message: "Idioma não foi encontrado" });
-        }
-
-        const movies = await prisma.movie.findMany({
-            where: {
-                languages: {
-                    name: {
-                        equals: languageName,
-                        mode: "insensitive",
-                    },
-                },
-            },
-            include: {
-                genres: true,
-                languages: true,
-            }
-        });
-
-        res.json(movies);
-
-    } catch (error) {
-        res.status(500).send({ message: "Houve um problema na busca." });
-    }
-
-})
-
 app.post("/movies", async (req, res) => {
     let { title, genre_id, language_id, oscar_count, release_date } = req.body;
 
